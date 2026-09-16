@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Jogo em grupo para treinar GeoGuessr: adivinhe o país por placas, linhas da pista, escrita e mão de direção.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌍</text></svg>">
+<style>*,*::before,*::after{box-sizing:border-box}[hidden]{display:none!important}body{margin:0}</style>
+<title>Carimbo no Passaporte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Figtree:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --ground:#0E3530; --ground-2:#12423B; --paper:#F2ECDF; --paper-2:#E6DECB;
+    --ink:#1A1F1D; --ink-soft:#5B5F55; --gold:#D9A441; --stamp:#B8402B; --ok:#2F7D4F;
+    --line:rgba(242,236,223,.14);
+    --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+    --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  }
+  html,body{height:100%}
+  body{background:var(--ground);color:var(--paper);font:16px/1.5 var(--body);
+    background-image:radial-gradient(circle at 20% 0%,var(--ground-2),transparent 60%),
+      repeating-linear-gradient(45deg,transparent 0 22px,rgba(255,255,255,.018) 22px 23px);}
+  .wrap{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:20px 40px}
+  header.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:22px}
+  .brand{font-family:var(--display);font-weight:900;font-size:clamp(28px,5vw,40px);letter-spacing:.02em;
+    text-transform:uppercase;line-height:1;color:var(--paper)}
+  .brand span{color:var(--gold)}
+  .meta{font-family:var(--mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+  button{font:inherit;cursor:pointer;border:0;border-radius:6px}
+  button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+  .btn{background:var(--gold);color:var(--ink);font-weight:700;padding:12px 18px;letter-spacing:.01em}
+  .btn:hover{filter:brightness(1.06)}
+  .btn.ghost{background:transparent;color:var(--paper);box-shadow:inset 0 0 0 1.5px var(--line)}
+  .btn.ghost:hover{box-shadow:inset 0 0 0 1.5px var(--paper)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* setup */
+  .setup{display:grid;grid-template-columns:1.1fr .9fr;gap:28px;align-items:start}
+  .pitch h1{font-family:var(--display);font-weight:900;font-size:clamp(44px,8vw,84px);line-height:.9;
+    text-transform:uppercase;margin:0 0 16px;text-wrap:balance}
+  .pitch h1 em{font-style:normal;color:var(--gold)}
+  .pitch p{max-width:52ch;color:rgba(242,236,223,.82);margin:0 0 12px}
+  .rules{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:8px;font-size:15px}
+  .rules li{display:flex;gap:10px;align-items:baseline}
+  .rules b{font-family:var(--mono);color:var(--gold);min-width:4.5ch}
+  .card{background:var(--paper);color:var(--ink);border-radius:10px;padding:22px;
+    box-shadow:0 18px 40px rgba(0,0,0,.28)}
+  .card h2{font-family:var(--display);text-transform:uppercase;font-weight:800;font-size:26px;margin:0 0 14px;letter-spacing:.02em}
+  .plist{display:grid;gap:8px;margin-bottom:12px}
+  .prow{display:flex;gap:8px;align-items:center}
+  .prow .num{font-family:var(--mono);font-weight:600;width:2ch;color:var(--ink-soft)}
+  .prow input{flex:1;min-width:0;font:inherit;padding:10px 12px;border-radius:6px;border:1.5px solid var(--paper-2);background:#fff;color:var(--ink)}
+  .prow button{background:transparent;color:var(--ink-soft);width:36px;height:40px;font-size:20px}
+  .prow button:hover{color:var(--stamp)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  label.lbl{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+  select{font:inherit;padding:10px 12px;border-radius:6px;border:1.5px solid var(--paper-2);background:#fff;color:var(--ink)}
+  .card .btn.ghost{color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--paper-2)}
+  .card .btn.ghost:hover{box-shadow:inset 0 0 0 1.5px var(--ink)}
+  .start{width:100%;margin-top:16px;font-size:18px;padding:14px}
+
+  /* game */
+  .game{display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start}
+  .clues{display:grid;gap:10px}
+  .clue{background:var(--paper);color:var(--ink);border-radius:8px;padding:14px 16px 14px 62px;position:relative;
+    animation:drop .35s ease-out both}
+  .clue .n{position:absolute;left:14px;top:12px;width:34px;height:34px;border-radius:50%;
+    border:2px solid var(--stamp);color:var(--stamp);display:grid;place-items:center;
+    font-family:var(--mono);font-weight:600;font-size:13px;transform:rotate(-8deg)}
+  .clue .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+  .clue p{margin:2px 0 0;font-size:17px;font-weight:500}
+  .clue.photo{background:var(--paper-2)}
+  .clue.hidden{background:transparent;color:rgba(242,236,223,.4);box-shadow:inset 0 0 0 1.5px dashed;border:1.5px dashed var(--line);animation:none}
+  .clue.hidden .n{border-color:var(--line);color:rgba(242,236,223,.35)}
+  @keyframes drop{from{transform:translateY(-6px);opacity:.3}to{transform:none;opacity:1}}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .worth{font-family:var(--mono);font-size:13px;color:var(--gold);margin:0 0 10px;letter-spacing:.06em;text-transform:uppercase}
+
+  .board{background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .board h3{margin:0 0 4px;font-family:var(--display);text-transform:uppercase;font-size:22px;letter-spacing:.03em}
+  .board .hint{font-size:13px;color:rgba(242,236,223,.65);margin:0 0 12px}
+  .pl{display:grid;gap:8px}
+  .buzz{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:10px;width:100%;
+    background:var(--ground-2);color:var(--paper);padding:10px 12px;text-align:left;box-shadow:inset 0 0 0 1.5px var(--line)}
+  .buzz:hover:not(:disabled){box-shadow:inset 0 0 0 1.5px var(--gold)}
+  .buzz .key{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-radius:4px;text-align:center;padding:1px 0}
+  .buzz .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .buzz .sc{font-family:var(--display);font-weight:800;font-size:24px;font-variant-numeric:tabular-nums;color:var(--gold)}
+  .buzz.out{opacity:.45;text-decoration:line-through}
+  .buzz.active{background:var(--gold);color:var(--ink)}
+  .buzz.active .sc{color:var(--ink)}
+
+  .answer{margin-top:16px;background:var(--paper);color:var(--ink);border-radius:10px;padding:16px}
+  .answer .who{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--stamp);margin-bottom:8px}
+  .answer form{display:flex;gap:8px;flex-wrap:wrap}
+  .answer input{flex:1 1 220px;min-width:0;font:inherit;font-size:18px;padding:12px;border-radius:6px;border:1.5px solid var(--paper-2)}
+  .shake{animation:shake .35s}
+  @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .toast{margin-top:10px;font-weight:600;min-height:1.5em}
+  .toast.bad{color:var(--stamp)}
+
+  .reveal{margin-top:16px;background:var(--paper);color:var(--ink);border-radius:10px;padding:20px 22px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;position:relative;overflow:hidden}
+  .stampmark{flex:none;width:112px;height:112px;border-radius:50%;border:4px double var(--stamp);color:var(--stamp);
+    display:grid;place-items:center;text-align:center;font-family:var(--display);font-weight:900;text-transform:uppercase;
+    font-size:18px;line-height:1;transform:rotate(-12deg);animation:stamp .4s cubic-bezier(.2,1.6,.4,1) both;padding:10px}
+  .stampmark.ok{border-color:var(--ok);color:var(--ok)}
+  @keyframes stamp{from{transform:rotate(-12deg) scale(2);opacity:0}to{transform:rotate(-12deg) scale(1);opacity:1}}
+  .reveal .country{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,54px);text-transform:uppercase;line-height:.95;margin:0}
+  .reveal .res{margin:6px 0 0;color:var(--ink-soft)}
+  .reveal .grow{flex:1;min-width:200px}
+
+  .memo{flex-basis:100%;border-top:1.5px dashed var(--paper-2);padding-top:12px;font-weight:600}
+  .memo span{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--stamp);font-weight:600;margin-bottom:2px}
+  .sheet-h{font-family:var(--display);text-transform:uppercase;font-weight:800;font-size:30px;margin:40px 0 4px}
+  .sheet-sub{color:rgba(242,236,223,.7);margin:0 0 14px}
+  .sheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;text-align:left}
+  .sheet div{background:var(--ground-2);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+  .sheet div.miss{border-color:var(--stamp);box-shadow:inset 3px 0 0 var(--stamp)}
+  .sheet strong{font-family:var(--display);font-size:22px;text-transform:uppercase;letter-spacing:.02em}
+  .sheet .tag{float:right;font-family:var(--mono);font-size:11px;color:var(--gold);text-transform:uppercase;margin-top:6px}
+  .sheet div.miss .tag{color:#E07A62}
+  .sheet p{margin:4px 0 0;font-size:14px;color:rgba(242,236,223,.85)}
+  .final{text-align:center;max-width:900px;margin:0 auto}
+  .final h1{font-family:var(--display);font-weight:900;text-transform:uppercase;font-size:clamp(44px,9vw,80px);line-height:.9;margin:10px 0 24px}
+  .rank{display:grid;gap:8px;text-align:left;margin:0 auto 22px;max-width:640px}
+  .rank div{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;background:var(--paper);color:var(--ink);border-radius:8px;padding:12px 16px}
+  .rank div:first-child{background:var(--gold)}
+  .rank .pos{font-family:var(--mono);font-weight:600}
+  .rank .pts{font-family:var(--display);font-weight:800;font-size:28px;font-variant-numeric:tabular-nums}
+
+  @media (max-width:820px){.setup,.game{grid-template-columns:1fr}.board{order:-1}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Carimbo no <span>Passaporte</span></div>
+    <div class="meta" id="meta">44 países · até 8 jogadores</div>
+  </header>
+  <main id="app"></main>
+</div>
+<datalist id="countries"></datalist>
+
+<script>
+const C = [
+ {n:"Brasil",r:"am",a:["brazil"],m:"Placa Mercosul · linha central amarela · português (ão, ç) · terra vermelha",c:["Postes de concreto, muros pintados com propaganda e muita terra vermelha na beira da estrada.","Placas de carro padrão Mercosul (brancas com faixa azul no topo) e linha central amarela.","Idioma com 'ão' e 'ç': 'Rua', 'Farmácia', 'Borracharia'. Domínio .com.br.","Rua de periferia com casas de tijolo sem reboco, caixa d'água azul na laje e bananeiras no quintal.","Mão direita. Maior país da América do Sul."]},
+ {n:"Argentina",r:"am",a:[],m:"Placa Mercosul · linha amarela · espanhol · pampa totalmente plano · postos YPF",c:["Planície completamente plana, com cercas de arame e fileiras de eucaliptos.","Placas de carro Mercosul (brancas com faixa azul) e linha central amarela.","Espanhol com 'vos' nas propagandas; domínio .com.ar.","Estrada reta sem fim no pampa, com um posto de combustível YPF azul e branco.","Mão direita. Vizinho do Brasil onde se fala espanhol e se toma mate."]},
+ {n:"Chile",r:"am",a:[],m:"Linha central BRANCA (Argentina é amarela) · Andes sempre a leste · deserto no norte",c:["A cordilheira aparece bem perto, quase sempre de um lado só (o leste).","Linhas centrais BRANCAS — a vizinha do outro lado dos Andes usa amarelas.","Espanhol; domínio .cl.","Deserto marrom sem uma planta sequer, ao lado de uma rodovia perto do Pacífico.","Mão direita. País comprido e estreito entre os Andes e o Pacífico."]},
+ {n:"Peru",r:"am",a:[],m:"Mototáxis · deserto costeiro cinza · nomes de partidos pintados nos muros",c:["Mototáxis de três rodas por toda parte nas cidades pequenas.","Muros e pedras pintados com nomes de candidatos e símbolos de partidos.","Espanhol; domínio .pe.","Deserto costeiro de areia cinza com casinhas de tijolo inacabadas e nenhuma árvore.","Mão direita. País de Machu Picchu."]},
+ {n:"Colômbia",r:"am",a:["colombia"],m:"Placa de carro AMARELA · Andes muito verdes · muitas motos",c:["Montanhas verdes muito íngremes e motos em quantidade.","Placas de carro AMARELAS com letras pretas.","Espanhol; domínio .com.co.","Rua de cidade andina com casas coloridas de dois andares e sacadas, morro verde ao fundo.","Mão direita. País do café, com litoral no Pacífico e no Caribe."]},
+ {n:"Uruguai",r:"am",a:["uruguay"],m:"Placa Mercosul · campo ONDULADO (Argentina é plana) · espanhol",c:["Campo ondulado e baixo (coxilhas), com gado e eucaliptos.","Placas de carro Mercosul (brancas com faixa azul).","Espanhol; domínio .com.uy.","Uma rambla à beira de um rio tão largo e marrom que parece mar.","Mão direita. Pequeno país entre o Brasil e a Argentina."]},
+ {n:"Bolívia",r:"am",a:["bolivia"],m:"Altiplano sem árvores · casas de adobe sem pintura · céu azul intenso",c:["Altiplano acima de 3.500 m: capim amarelado, céu azul intenso e quase nenhuma árvore.","Casas de adobe marrom sem pintura e minivans de transporte coletivo.","Espanhol, às vezes com aimará ou quéchua; domínio .bo.","Um deserto de sal branco que vai até o horizonte.","Mão direita. País sem saída para o mar com duas capitais."]},
+ {n:"México",r:"am",a:["mexico"],m:"Lojas OXXO · lombadas 'topes' · anúncios pintados à mão · cactos",c:["Lombadas ('topes') por toda parte e anúncios pintados à mão nos muros.","Placas de carro diferentes em cada estado.","Espanhol; domínio .com.mx.","Esquina com uma loja de conveniência OXXO vermelha e amarela e cactos colunares.","Mão direita. Vizinho ao sul dos Estados Unidos."]},
+ {n:"Estados Unidos",r:"am",a:["eua","usa","estados unidos da america","america","united states"],m:"Linha amarela · SPEED LIMIT em mph · placas de alerta amarelas em losango",c:["Postes de madeira e placas de alerta amarelas em losango.","Linha central amarela e limite de velocidade em MPH (placa 'SPEED LIMIT').","Inglês; placas de carro diferentes em cada estado.","Subúrbio com casas de madeira, gramados sem muro e caixas de correio na calçada.","Mão direita. País de 50 estados."]},
+ {n:"Canadá",r:"am",a:["canada"],m:"Linha amarela como nos EUA, mas km/h ('MAXIMUM') · 'ARRÊT' em Quebec",c:["Florestas de coníferas e rochas de granito rosado à beira da estrada.","Linha central amarela, mas velocidade em km/h numa placa 'MAXIMUM'.","Inglês e, em Quebec, placas de PARE escritas 'ARRÊT'. Domínio .ca.","Estrada reta na pradaria com silos de grãos e trigo até o horizonte.","Mão direita. Segundo maior país do mundo."]},
+ {n:"Portugal",r:"eu",a:[],m:"Placa com faixa AMARELA à direita · calçada portuguesa · eucaliptos",c:["Calçadas de pedrinhas brancas e pretas e muitos eucaliptos.","Placas de carro com faixa azul da UE à esquerda e faixa amarela à direita.","Português europeu; domínio .pt.","Vila de casas brancas com barras amarelas ou azuis e telhados laranja.","Mão direita. Vizinho da Espanha."]},
+ {n:"Espanha",r:"eu",a:["spain"],m:"Placa 1234 ABC · oliveiras · persianas enroladas · rotatórias",c:["Terra seca e alaranjada, oliveiras em fileiras e rotatórias por toda parte.","Placas de carro no formato 1234 ABC, com faixa azul da UE.","Espanhol (ou catalão, basco, galego); domínio .es.","Prédios de apartamentos com persianas enroladas e sacadas em ruas estreitas.","Mão direita. Maior país da Península Ibérica."]},
+ {n:"França",r:"eu",a:["franca","france"],m:"Placa AB-123-CD com faixa azul dos dois lados · balizador com faixa preta inclinada",c:["Balizadores brancos com faixa preta inclinada e refletor vermelho.","Placas AB-123-CD, com hífens e faixa azul dos dois lados.","Francês; domínio .fr.","Vila de casas de pedra com igreja no centro e plátanos ao longo da estrada.","Mão direita. País da Torre Eiffel."]},
+ {n:"Itália",r:"eu",a:["italia","italy"],m:"Placa AB 123 CD SEM hífens, faixa azul dos dois lados · ciprestes · estradas 'SS'",c:["Guarda-corpos metálicos e ciprestes enfileirados nas colinas.","Placas AB 123 CD, sem hífens, com faixa azul dos dois lados.","Italiano; estradas marcadas 'SS' (Strada Statale). Domínio .it.","Cidadezinha medieval de pedra no alto de uma colina, com campanário.","Mão direita. País em forma de bota."]},
+ {n:"Alemanha",r:"eu",a:["germany"],m:"Placa de entrada de cidade AMARELA · ß e 'Straße' · casas enxaimel",c:["Placas de entrada de cidade amarelas com o nome em preto.","Placas de carro com a sigla da cidade de origem, um selo e faixa azul da UE.","Alemão, com 'ß' e 'Straße'; domínio .de.","Casas enxaimel com vigas de madeira aparentes e campos de canola amarela.","Mão direita. País mais populoso da União Europeia."]},
+ {n:"Reino Unido",r:"eu",a:["inglaterra","gra bretanha","uk","england","escocia","gales"],m:"Mão esquerda · placa traseira amarela · mph · faixa amarela dupla",c:["Faixas amarelas duplas na beira da rua (proibido estacionar).","Placa traseira dos carros amarela; a da frente, branca.","Inglês e velocidades em mph; domínio .co.uk.","Estradinha estreita entre cercas vivas altas, com casas de tijolo.","Mão esquerda. Nação de Londres."]},
+ {n:"Irlanda",r:"eu",a:["ireland"],m:"Mão esquerda · km/h (Reino Unido é mph) · linha lateral amarela · placas bilíngues",c:["Linhas laterais AMARELAS marcando o acostamento.","Placas brancas com o ano e o código do condado (ex: 191-D-12345).","Placas de trânsito em irlandês (em itálico) e inglês, velocidade em km/h. Domínio .ie.","Colinas muito verdes divididas por muros de pedra, sob céu nublado.","Mão esquerda. Ilha vizinha da Grã-Bretanha."]},
+ {n:"Países Baixos",r:"eu",a:["holanda","paises baixos","netherlands","holland"],m:"Placas de carro AMARELAS na frente e atrás · ciclovia vermelha · tudo plano",c:["Ciclovias de asfalto vermelho separadas da rua.","Placas de carro amarelas na frente E atrás.","Holandês, com 'ij' e 'straat'; domínio .nl.","Terreno plano, canais retos e casas de tijolo com janelões sem cortina.","Mão direita. Terra das tulipas e dos moinhos."]},
+ {n:"Bélgica",r:"eu",a:["belgica","belgium"],m:"Placa de carro com letras VERMELHAS · paralelepípedo · holandês ou francês",c:["Ruas de paralelepípedo e casas de tijolo geminadas, cada uma de um estilo.","Placas de carro brancas com letras e números VERMELHOS.","Holandês no norte, francês no sul; domínio .be.","Praça com igreja gótica e uma cervejaria na esquina.","Mão direita. País dos waffles, entre França e Países Baixos."]},
+ {n:"Suíça",r:"eu",a:["suica","switzerland"],m:"Autoestrada com placa VERDE · brasão do cantão na placa do carro · chalés",c:["Autoestradas com placas de fundo VERDE; estradas comuns com placas azuis.","Placas de carro com o brasão do cantão e uma sigla de duas letras.","Alemão, francês ou italiano, conforme a região; domínio .ch.","Chalés de madeira com flores nas janelas e montanhas nevadas ao fundo.","Mão direita. País neutro dos relógios e do chocolate."]},
+ {n:"Grécia",r:"eu",a:["grecia","greece"],m:"Alfabeto grego · oratórios de beira de estrada · oliveiras e casas brancas",c:["Pequenos oratórios em forma de igrejinha na beira das estradas.","Placas de carro usam só letras que existem nos dois alfabetos (A, B, E, H, K...).","Alfabeto grego (Δ, Λ, Σ) com transcrição latina embaixo; domínio .gr.","Colinas secas com oliveiras e casas brancas de telhado plano.","Mão direita. Berço das Olimpíadas."]},
+ {n:"Noruega",r:"eu",a:["norway"],m:"Linha central AMARELA (Suécia é branca) · ø e å · túneis e fiordes",c:["Túneis por toda parte e casas de madeira vermelhas, brancas ou amarelas.","Linha central AMARELA — a vizinha a leste usa branca.","Norueguês, com 'ø' e 'å'; domínio .no.","Estrada estreita à beira de um fiorde com montanhas caindo na água.","Mão direita. País dos fiordes."]},
+ {n:"Suécia",r:"eu",a:["suecia","sweden"],m:"Linha central BRANCA · alertas com fundo amarelo · å ä ö · casas vermelhas",c:["Florestas de pinheiro e bétula com casas vermelhas de detalhes brancos.","Linhas centrais brancas e placas de alerta triangulares com fundo amarelo.","Sueco, com 'å', 'ä' e 'ö'; domínio .se.","Lago calmo refletindo a floresta, com um pequeno cais de madeira.","Mão direita. Terra da IKEA."]},
+ {n:"Finlândia",r:"eu",a:["finlandia","finland"],m:"Vogais dobradas (aa, ää) · placa ABC-123 · alertas amarelos · lagos",c:["Placas de alerta com fundo amarelo e palavras cheias de vogais dobradas.","Placas de carro brancas no formato ABC-123.","Finlandês ('katu', 'tie', 'järvi'), às vezes com sueco embaixo; domínio .fi.","Estrada de terra entre pinheiros e lagos, com casas de madeira.","Mão direita. Terra dos mil lagos e da sauna."]},
+ {n:"Dinamarca",r:"eu",a:["denmark"],m:"Placa de carro com BORDA VERMELHA · æ ø å · plano com turbinas eólicas",c:["Terreno plano e verde com fazendas de tijolo e turbinas eólicas.","Placas de carro brancas com uma borda VERMELHA.","Dinamarquês, com 'æ', 'ø' e 'å'; domínio .dk.","Casas de tijolo amarelo com telhado de palha perto do mar.","Mão direita. País da LEGO, ao norte da Alemanha."]},
+ {n:"Islândia",r:"eu",a:["islandia","iceland"],m:"Sem árvores · letras þ e ð · pontes de pista única 'Einbreið brú'",c:["Paisagem sem árvores: musgo verde sobre lava e montanhas escuras.","Pontes de uma pista só com a placa 'Einbreið brú'.","Islandês, com as letras 'þ' e 'ð'; domínio .is.","Estrada vazia com uma cachoeira caindo de um paredão ao lado.","Mão direita. Ilha de gelo e vulcões no Atlântico Norte."]},
+ {n:"Polônia",r:"eu",a:["polonia","poland"],m:"ł ż ś · 'ul.' antes do nome da rua · prédios em bloco e igrejas grandes",c:["Prédios residenciais em blocos e igrejas católicas enormes em vilarejos.","Placas de carro com faixa azul da UE e prefixo de região em letras.","Polonês, com 'ł', 'ż', 'ś' e 'ul.' antes do nome da rua; domínio .pl.","Planície com campos de trigo e fileiras de árvores ao longo da estrada.","Mão direita. Vizinho a leste da Alemanha."]},
+ {n:"Rússia",r:"eu",a:["russia"],m:"Cirílico (ул.) · bandeirinha e código de região na placa · bétulas e prédios soviéticos",c:["Florestas de bétulas brancas e prédios residenciais de painel da era soviética.","Placas de carro com código de região e uma bandeirinha tricolor no canto direito.","Alfabeto cirílico ('ул.' = rua); domínio .ru.","Vilarejo com casas de madeira de janelas decoradas e cercas pintadas.","Mão direita. Maior país do mundo."]},
+ {n:"Turquia",r:"eu",a:["turkey","turkiye"],m:"'ı' sem ponto, ş, ğ · placa com faixa azul 'TR' · minaretes · aquecedores solares",c:["Minaretes finos no horizonte de quase todo vilarejo.","Placas de carro brancas com faixa azul 'TR' à esquerda.","Turco, com 'ı' sem ponto, 'ş' e 'ğ'; domínio .com.tr.","Colinas secas com casas de telhado laranja e aquecedores solares no telhado.","Mão direita. País entre a Europa e a Ásia."]},
+ {n:"África do Sul",r:"af",a:["africa do sul","south africa"],m:"Mão esquerda · acostamento com linha amarela · africâner ('straat', 'weg')",c:["Rodovias com acostamento largo marcado por linha AMARELA.","Placas de carro que mudam de cor e formato conforme a província.","Inglês e africâner ('straat', 'weg'); domínio .co.za.","Estrada no semiárido Karoo, com arbustos baixos e montanhas de topo plano.","Mão esquerda. País no extremo sul da África."]},
+ {n:"Quênia",r:"af",a:["quenia","kenya"],m:"Mão esquerda · snorkel no carro do Google · placa traseira amarela começando com K",c:["Em muitas imagens aparece um snorkel no carro do Google.","Placa traseira amarela e dianteira branca, começando com 'K'.","Inglês e suaíli ('karibu'); domínio .co.ke.","Terra vermelha, acácias de copa plana e vans coloridas de transporte.","Mão esquerda. País da África Oriental cortado pela linha do Equador."]},
+ {n:"Nigéria",r:"af",a:["nigeria"],m:"Mão direita (raro na região) · carro de escolta seguindo o Google · placa com letras verdes",c:["O carro do Google às vezes aparece seguido por um carro de escolta.","Placas de carro brancas com letras verdes e o nome do estado.","Inglês; domínio .com.ng.","Rua movimentada com vans amarelas de transporte e mototáxis.","Mão direita. País mais populoso da África."]},
+ {n:"Índia",r:"as",a:["india"],m:"Mão esquerda · tuk-tuks amarelo e verde · devanágari · vacas na rua",c:["Riquixás motorizados amarelos e verdes e vacas andando pela rua.","Placas de carro particulares brancas, comerciais amarelas, começando pela sigla do estado.","Hindi em devanágari e outras escritas locais; domínio .in.","Rua lotada de lojinhas com letreiros pintados, motos e fios emaranhados.","Mão esquerda. País mais populoso do mundo."]},
+ {n:"Japão",r:"as",a:["japao","japan"],m:"Mão esquerda · proteção listrada amarela/preta nos postes · placas amarelas de carro kei",c:["Postes com proteção listrada amarela e preta e espelhos convexos nas esquinas.","Placas de carro pequenas; as amarelas são dos minicarros 'kei'.","Kanji, hiragana e katakana; domínio .jp.","Rua estreita sem calçada, com fios emaranhados e máquinas de bebida.","Mão esquerda. Arquipélago do Monte Fuji."]},
+ {n:"Coreia do Sul",r:"as",a:["coreia","korea","south korea"],m:"Mão direita · Hangul (círculos e traços) · prédios idênticos numerados · linha amarela dupla",c:["Linha central amarela dupla e prédios de apartamentos idênticos com números enormes na fachada.","Placas de carro brancas com números e uma sílaba em escrita local.","Hangul, escrita de círculos e traços (서울); domínio .kr.","Rua com letreiros empilhados até o alto dos prédios.","Mão direita. Terra do K-pop."]},
+ {n:"Tailândia",r:"as",a:["tailandia","thailand"],m:"Mão esquerda · meio-fio listrado · escrita cheia de laços · 7-Eleven",c:["Meios-fios pintados com listras vermelhas e brancas ou pretas e brancas.","Placas de carro brancas com letras curvas e o nome da província embaixo.","Escrita cheia de laços e voltas; domínio .co.th.","Estrada com uma 7-Eleven, motos e um templo de telhado dourado.","Mão esquerda. Único país do Sudeste Asiático que nunca foi colônia."]},
+ {n:"Indonésia",r:"as",a:["indonesia"],m:"Mão esquerda · 'Jalan'/'Jl.' e 'Warung' · placas pretas (novas brancas) · arrozais",c:["Motos por toda parte, telhados de telha laranja, coqueiros e arrozais.","Placas de carro pretas com letras brancas (as mais novas são brancas).","Indonésio: 'Jl.' (Jalan), 'Toko', 'Warung'; domínio .co.id.","Terraços de arroz verdes com um vulcão no horizonte.","Mão esquerda. Maior arquipélago do mundo."]},
+ {n:"Malásia",r:"as",a:["malasia","malaysia"],m:"Mão esquerda · palma de óleo em fileiras · 'Jalan' + letreiros em chinês",c:["Plantações de palma de óleo em fileiras por quilômetros.","Placas de carro pretas com letras brancas, começando pela letra do estado.","Malaio ('Jalan', 'Selamat Datang') e letreiros em chinês; domínio .com.my.","Rodovia moderna com placas verdes e uma mesquita de cúpula dourada.","Mão esquerda. Vizinho de Singapura."]},
+ {n:"Filipinas",r:"as",a:["filipinas","philippines"],m:"Mão direita (Indonésia/Malásia são esquerda) · tabelas de basquete · jeepneys",c:["Tabelas de basquete em quase toda esquina, até em ruas de terra.","Jeepneys coloridos e triciclos com sidecar.","Inglês e tagalo; domínio .ph.","Vilarejo com casas de bloco, palmeiras e uma igreja antiga de pedra.","Mão direita. Arquipélago asiático colonizado pela Espanha."]},
+ {n:"Austrália",r:"as",a:["australia"],m:"Mão esquerda · solo vermelho e eucaliptos · alertas amarelos em losango · km/h",c:["Solo vermelho e eucaliptos de tronco claro.","Placas de alerta amarelas em losango e limites em km/h.","Inglês; domínio .com.au.","Estrada reta no outback com uma placa de cuidado com cangurus.","Mão esquerda. País-continente."]},
+ {n:"Nova Zelândia",r:"as",a:["nova zelandia","new zealand"],m:"Mão esquerda · nomes maori 'Wai'/'Whaka' · linha amarela de não ultrapassar",c:["Nomes de lugares em maori começando com 'Wai' ou 'Whaka'.","Linhas amarelas de proibido ultrapassar ao lado da central branca.","Inglês; domínio .co.nz.","Colinas muito verdes com ovelhas e montanhas nevadas ao longe.","Mão esquerda. Terra dos kiwis e de O Senhor dos Anéis."]},
+ {n:"Emirados Árabes Unidos",r:"as",a:["emirados","emirados arabes","eau","uae"],m:"Placas bilíngues árabe/inglês · nome do emirado na placa do carro · deserto e arranha-céus",c:["Placas de rua bilíngues em árabe e inglês e palmeiras alinhadas no canteiro.","Placas de carro com o nome do emirado (ex: DUBAI) e um número.","Árabe e inglês; domínio .ae.","Avenida larga de seis pistas com arranha-céus espelhados e deserto no fim.","Mão direita. Federação de sete emirados no Golfo Pérsico."]}
+];
+const REGIONS = {all:"Mundo todo",am:"Américas",eu:"Europa",af:"África",as:"Ásia e Oceania"};
+const DECOYS = ["China","Egito","Marrocos","Cuba","Jamaica","Vietnã","Arábia Saudita","Camboja","Laos","Sri Lanka","Estônia","Letônia","Lituânia","Eslováquia","Eslovênia","Sérvia","Montenegro","Bangladesh","Taiwan","Uganda","Botsuana","Namíbia","Lesoto","Essuatíni","Ruanda","Costa Rica","República Dominicana","Porto Rico","Guatemala","Afeganistão","Albânia","Angola","Armênia","Áustria","Bulgária","Camarões","Catar","Cazaquistão","Croácia","Equador","Escócia","Etiópia","Gana","Guatemala","Haiti","Honduras","Hungria","Irã","Iraque","Israel","Líbano","Moçambique","Mongólia","Nepal","Panamá","Paquistão","Paraguai","República Tcheca","Romênia","Senegal","Singapura","Síria","Tanzânia","Tunísia","Ucrânia","Venezuela"];
+
+const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z ]/g," ").replace(/\s+/g," ").trim().replace(/^(o|a|os|as) /,"");
+const esc = s => String(s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const $app = document.getElementById("app"), $meta = document.getElementById("meta");
+document.getElementById("countries").innerHTML = [...C.map(c=>c.n),...DECOYS].sort((a,b)=>a.localeCompare(b,"pt")).map(n=>`<option value="${esc(n)}">`).join("");
+
+let saved = null; try { saved = JSON.parse(localStorage.getItem("passaporte-players")||"null"); } catch(e){}
+const S = { phase:"setup", names: saved && saved.length ? saved : ["Ana","Bruno","Carla"], rounds:10, region:"all", history:[],
+  players:[], deck:[], r:0, shown:1, out:new Set(), buzz:null, result:null, msg:"" };
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function render(){
+  if(S.phase==="setup") return renderSetup();
+  if(S.phase==="end") return renderEnd();
+  renderGame();
+}
+
+function renderSetup(){
+  $meta.textContent = `${C.length} países · até 8 jogadores`;
+  $app.innerHTML = `<section class="setup">
+    <div class="pitch">
+      <h1>Onde<br>você <em>está?</em></h1>
+      <p>Treino de GeoGuessr em grupo: cada país vem com cinco pistas do tipo que você vê no Street View — linhas da pista, placas de carro, escrita, paisagem e mão de direção. Quem reconhecer primeiro aperta o próprio botão e responde.</p>
+      <p>Depois de cada rodada aparece a colinha de metas do país, e no fim vocês ganham a lista completa para revisar. Jogue no mesmo computador, na TV ou compartilhando a tela numa chamada.</p>
+      <ul class="rules">
+        <li><b>5 pts</b> acertar na 1ª dica — cada dica nova vale 1 ponto a menos</li>
+        <li><b>errou</b> fica fora da rodada; os outros continuam</li>
+        <li><b>1–8</b> teclas que apertam o botão de cada jogador · <b>espaço</b> revela a próxima dica</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Tripulação</h2>
+      <div class="plist">${S.names.map((n,i)=>`<div class="prow"><span class="num">${i+1}</span>
+        <input id="p${i}" data-i="${i}" value="${esc(n)}" maxlength="18" aria-label="Nome do jogador ${i+1}">
+        <button data-del="${i}" aria-label="Remover jogador" ${S.names.length<=1?"disabled":""}>×</button></div>`).join("")}</div>
+      <div class="row">
+        <button class="btn ghost" id="add" ${S.names.length>=8?"disabled":""}>+ Jogador</button>
+        <span style="flex:1"></span>
+        <label class="lbl" for="region">Região</label>
+        <select id="region">${Object.entries(REGIONS).map(([k,v])=>`<option value="${k}" ${k===S.region?"selected":""}>${v}</option>`).join("")}</select>
+        <label class="lbl" for="rounds">Rodadas</label>
+        <select id="rounds">${[5,10,15,20].map(v=>`<option ${v===S.rounds?"selected":""}>${v}</option>`).join("")}</select>
+      </div>
+      <button class="btn start" id="start">Embarcar</button>
+    </div>
+  </section>`;
+}
+
+function renderGame(){
+  const country = S.deck[S.r], worth = 6 - S.shown;
+  $meta.textContent = `Rodada ${S.r+1} de ${S.deck.length}`;
+  const kinds = ["Detalhe da estrada","Placas e sinalização","Escrita e idioma","Cena do Street View","Dica fácil"];
+  const clues = country.c.map((t,i)=> i < S.shown || S.result
+    ? `<div class="clue ${i===3?"photo":""}"><div class="n">${i+1}</div><div class="k">${i===3?"📷 ":""}${kinds[i]}</div><p>${esc(t)}</p></div>`
+    : `<div class="clue hidden"><div class="n">${i+1}</div><div class="k">${kinds[i]}</div><p>Vale ${6-(i+1)} ${i===4?"ponto":"pontos"}</p></div>`).join("");
+
+  let lower = "";
+  if(S.result){
+    const w = S.result.winner;
+    lower = `<div class="reveal">
+      <div class="stampmark ${w!=null?"ok":""}">${w!=null?`+${S.result.pts}<br>pts`:"Ninguém<br>acertou"}</div>
+      <div class="grow"><p class="country">${esc(country.n)}</p>
+      <p class="res">${w!=null?`${esc(S.players[w].name)} carimbou o passaporte na ${S.result.at}ª dica.`:"Esse ficou sem carimbo."}</p></div>
+      <button class="btn" id="nextRound">${S.r+1<S.deck.length?"Próximo país →":"Ver resultado"}</button>
+      <div class="memo"><span>Para lembrar no GeoGuessr</span>${esc(country.m)}</div>
+    </div>`;
+  } else if(S.buzz!=null){
+    lower = `<div class="answer" id="ansBox">
+      <div class="who">${esc(S.players[S.buzz].name)} está respondendo · vale ${worth}</div>
+      <form id="ansForm"><input id="ans" list="countries" autocomplete="off" placeholder="Digite o país…" aria-label="Resposta">
+      <button class="btn" type="submit">Responder</button><button class="btn ghost" type="button" id="cancel" style="color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--paper-2)">Cancelar</button></form>
+    </div>`;
+  } else {
+    lower = `<div class="actions">
+      <button class="btn" id="more" ${S.shown>=5?"disabled":""}>Próxima dica${S.shown<5?` (passa a valer ${worth-1})`:""}</button>
+      <button class="btn ghost" id="giveup">Revelar país</button>
+    </div><div class="toast bad" role="status">${esc(S.msg)}</div>`;
+  }
+
+  $app.innerHTML = `<section class="game">
+    <div>
+      <p class="worth">${S.result?"Resposta":`Valendo ${worth} ${worth===1?"ponto":"pontos"}`}</p>
+      <div class="clues">${clues}</div>
+      ${lower}
+    </div>
+    <aside class="board">
+      <h3>Placar</h3>
+      <p class="hint">Sabe a resposta? Aperte seu nome (ou o número).</p>
+      <div class="pl">${S.players.map((p,i)=>`<button class="buzz ${S.out.has(i)?"out":""} ${S.buzz===i?"active":""}" data-buzz="${i}"
+        ${S.result||S.out.has(i)||S.buzz!=null?"disabled":""}><span class="key">${i+1}</span><span class="nm">${esc(p.name)}</span><span class="sc">${p.score}</span></button>`).join("")}</div>
+      <div class="actions"><button class="btn ghost" id="quit" style="width:100%">Encerrar partida</button></div>
+    </aside>
+  </section>`;
+  if(S.buzz!=null) document.getElementById("ans")?.focus();
+}
+
+function renderEnd(){
+  $meta.textContent = "Fim da viagem";
+  const rank = S.players.map(p=>p).sort((a,b)=>b.score-a.score);
+  $app.innerHTML = `<section class="final">
+    <div class="meta">Quem rodou mais o mundo</div>
+    <h1>${esc(rank[0].name)} venceu</h1>
+    <div class="rank">${rank.map((p,i)=>`<div><span class="pos">${i+1}º</span><strong>${esc(p.name)}</strong><span class="pts">${p.score}</span></div>`).join("")}</div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="again">Jogar de novo</button>
+      <button class="btn ghost" id="toSetup">Trocar jogadores</button>
+    </div>
+    <h2 class="sheet-h">Colinha de metas</h2>
+    <p class="sheet-sub">Os países desta partida. Os que ninguém acertou estão marcados — comece a revisar por eles.</p>
+    <div class="sheet">${S.history.map(h=>`<div class="${h.hit?"":"miss"}"><strong>${esc(h.c.n)}</strong><span class="tag">${h.hit?`${h.at}ª dica`:"ninguém"}</span><p>${esc(h.c.m)}</p></div>`).join("")}</div>
+  </section>`;
+}
+
+function readNames(){ document.querySelectorAll(".prow input").forEach(inp=>S.names[+inp.dataset.i]=inp.value); }
+function startGame(){
+  readNames();
+  const names = S.names.map(n=>n.trim()).filter(Boolean);
+  if(!names.length) return;
+  S.names = names; try{ localStorage.setItem("passaporte-players", JSON.stringify(names)); }catch(e){}
+  S.players = names.map(name=>({name,score:0}));
+  S.history=[]; S.deck = shuffle(C.filter(c=>S.region==="all"||c.r===S.region)).slice(0, Math.min(S.rounds, C.length));
+  S.r=0; newRound(); S.phase="game"; render();
+}
+function newRound(){ S.shown=1; S.out=new Set(); S.buzz=null; S.result=null; S.msg=""; }
+function reveal(winner){ S.history.push({c:S.deck[S.r],hit:winner!=null,at:S.shown}); S.result = {winner, pts: winner!=null?6-S.shown:0, at:S.shown}; S.buzz=null; S.shown=5; }
+function nextClue(){ if(S.shown<5){ S.shown++; S.msg=""; render(); } }
+
+function submit(){
+  const input = document.getElementById("ans"); const guess = norm(input.value);
+  if(!guess) return;
+  const c = S.deck[S.r], who = S.buzz;
+  if([c.n,...c.a].some(x=>norm(x)===guess)){
+    S.players[who].score += 6 - S.shown; reveal(who); render();
+  } else {
+    S.out.add(who); S.buzz=null;
+    S.msg = `${S.players[who].name} chutou “${input.value.trim()}” e está fora desta rodada.`;
+    if(S.out.size===S.players.length){ reveal(null); }
+    render();
+    if(!S.result) document.querySelector(".clues")?.classList.add("shake");
+  }
+}
+
+$app.addEventListener("click", e=>{
+  const t = e.target.closest("button"); if(!t) return;
+  if(t.id==="add"){ readNames(); S.names.push(""); render(); document.getElementById("p"+(S.names.length-1))?.focus(); }
+  else if(t.dataset.del!=null){ readNames(); S.names.splice(+t.dataset.del,1); render(); }
+  else if(t.id==="start") startGame();
+  else if(t.id==="more") nextClue();
+  else if(t.id==="giveup"){ reveal(null); render(); }
+  else if(t.dataset.buzz!=null){ S.buzz=+t.dataset.buzz; S.msg=""; render(); }
+  else if(t.id==="cancel"){ S.buzz=null; render(); }
+  else if(t.id==="nextRound"){ if(S.r+1<S.deck.length){ S.r++; newRound(); render(); } else { S.phase="end"; render(); } }
+  else if(t.id==="quit"){ S.phase="end"; render(); }
+  else if(t.id==="again") startGame();
+  else if(t.id==="toSetup"){ S.phase="setup"; render(); }
+});
+$app.addEventListener("change", e=>{ if(e.target.id==="rounds") S.rounds=+e.target.value; if(e.target.id==="region") S.region=e.target.value; });
+$app.addEventListener("submit", e=>{ e.preventDefault(); submit(); });
+document.addEventListener("keydown", e=>{
+  if(S.phase!=="game") return;
+  if(e.target.matches("input,select,textarea")){ if(e.key==="Escape"){ S.buzz=null; render(); } return; }
+  if(S.result){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); document.getElementById("nextRound")?.click(); } return; }
+  if(S.buzz!=null) return;
+  const k = parseInt(e.key,10);
+  if(k>=1 && k<=S.players.length && !S.out.has(k-1)){ e.preventDefault(); S.buzz=k-1; S.msg=""; render(); }
+  else if(e.key===" "||e.key==="ArrowRight"){ e.preventDefault(); nextClue(); }
+});
+
+render();
+</script>
+</body>
+</html>
