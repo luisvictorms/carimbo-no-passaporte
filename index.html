@@ -133,6 +133,43 @@
 
   @media (max-width:820px){.setup,.game{grid-template-columns:1fr}.board{order:-1}}
   @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+  /* online */
+  .tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--paper-2);border-radius:8px;padding:4px;margin-bottom:18px}
+  .tabs button{background:transparent;color:var(--ink-soft);font-weight:700;padding:10px}
+  .tabs button[aria-selected="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .field{display:block;width:100%;font:inherit;font-size:17px;padding:12px;border-radius:6px;border:1.5px solid var(--paper-2);background:#fff;color:var(--ink);margin-top:6px}
+  .or{display:flex;align-items:center;gap:10px;margin:18px 0 10px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+  .or::before,.or::after{content:"";flex:1;border-top:1px solid var(--paper-2)}
+  .joinrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .joinrow .field{margin:0;flex:1 1 120px;min-width:0}
+  .code-in{font-family:var(--mono);font-weight:600;letter-spacing:.3em;text-transform:uppercase;text-align:center}
+  .linkbtn{background:none;color:var(--ink-soft);text-decoration:underline;padding:8px 0 0;font-size:14px}
+  .status{min-height:1.5em;margin:12px 0 0;font-weight:600;color:var(--ink-soft)}
+  .status.bad{color:var(--stamp)}
+  .bigcode{font-family:var(--mono);font-weight:600;font-size:clamp(56px,12vw,96px);letter-spacing:.18em;line-height:1;color:var(--gold);margin:6px 0 10px}
+  .lead{color:rgba(242,236,223,.82);max-width:52ch;margin:0 0 12px}
+  .linkrow{display:flex;gap:8px;flex-wrap:wrap;max-width:560px}
+  .linkrow input{flex:1 1 240px;min-width:0;font:14px var(--mono);padding:12px;border-radius:6px;border:1px solid var(--line);background:rgba(0,0,0,.2);color:var(--paper)}
+  .hostbox{margin-top:22px;background:var(--paper);color:var(--ink);border-radius:10px;padding:18px;max-width:560px}
+  .note{font-size:13px;color:var(--ink-soft);margin:10px 0 0}
+  .waiting{margin-top:22px;font-weight:600;color:var(--gold)}
+  .buzz.player{cursor:default}
+  .buzz.player.me{box-shadow:inset 0 0 0 1.5px var(--gold)}
+  .buzz.player.hit .st{color:#7FD19B}
+  .buzz.player.miss .st{color:#E07A62}
+  .buzz.player.out{text-decoration:none}
+  .buzz .nm small{font-weight:500;opacity:.7}
+  .buzz .nm .st{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.04em;opacity:.85;overflow:hidden;text-overflow:ellipsis}
+  @media (max-width:820px){.game.online .board{order:0}}
+  .timer{color:rgba(242,236,223,.75)}
+  .timebar{height:8px;border-radius:99px;background:rgba(0,0,0,.25);overflow:hidden;margin:-2px 0 12px}
+  .timebar i{display:block;height:100%;width:100%;background:var(--gold);border-radius:inherit;transition:width .25s linear}
+  .timebar i.low{background:var(--stamp)}
+  .mine{font-size:20px;font-weight:700;margin:4px 0}
+  .mine.good{color:var(--ok)} .mine.bad{color:var(--stamp)}
+  .answer .res{margin:0;color:var(--ink-soft)}
+  .btn.ghost.ink{color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--paper-2)}
 </style>
 </head>
 <body>
@@ -146,6 +183,7 @@
 </div>
 <datalist id="countries"></datalist>
 
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const C = [
  {n:"Brasil",r:"am",a:["brazil"],m:"Placa Mercosul · linha central amarela · português (ão, ç) · terra vermelha",c:["Postes de concreto, muros pintados com propaganda e muita terra vermelha na beira da estrada.","Placas de carro padrão Mercosul (brancas com faixa azul no topo) e linha central amarela.","Idioma com 'ão' e 'ç': 'Rua', 'Farmácia', 'Borracharia'. Domínio .com.br.","Rua de periferia com casas de tijolo sem reboco, caixa d'água azul na laje e bananeiras no quintal.","Mão direita. Maior país da América do Sul."]},
@@ -194,38 +232,77 @@ const C = [
 const REGIONS = {all:"Mundo todo",am:"Américas",eu:"Europa",af:"África",as:"Ásia e Oceania"};
 const DECOYS = ["China","Egito","Marrocos","Cuba","Jamaica","Vietnã","Arábia Saudita","Camboja","Laos","Sri Lanka","Estônia","Letônia","Lituânia","Eslováquia","Eslovênia","Sérvia","Montenegro","Bangladesh","Taiwan","Uganda","Botsuana","Namíbia","Lesoto","Essuatíni","Ruanda","Costa Rica","República Dominicana","Porto Rico","Guatemala","Afeganistão","Albânia","Angola","Armênia","Áustria","Bulgária","Camarões","Catar","Cazaquistão","Croácia","Equador","Escócia","Etiópia","Gana","Guatemala","Haiti","Honduras","Hungria","Irã","Iraque","Israel","Líbano","Moçambique","Mongólia","Nepal","Panamá","Paquistão","Paraguai","República Tcheca","Romênia","Senegal","Singapura","Síria","Tanzânia","Tunísia","Ucrânia","Venezuela"];
 
-const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z ]/g," ").replace(/\s+/g," ").trim().replace(/^(o|a|os|as) /,"");
+const norm = s => String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z ]/g," ").replace(/\s+/g," ").trim().replace(/^(o|a|os|as) /,"");
 const esc = s => String(s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
 const $app = document.getElementById("app"), $meta = document.getElementById("meta");
-document.getElementById("countries").innerHTML = [...C.map(c=>c.n),...DECOYS].sort((a,b)=>a.localeCompare(b,"pt")).map(n=>`<option value="${esc(n)}">`).join("");
+document.getElementById("countries").innerHTML = [...C.map(c=>c.n),...new Set(DECOYS)].sort((a,b)=>a.localeCompare(b,"pt")).map(n=>`<option value="${esc(n)}">`).join("");
 
-let saved = null; try { saved = JSON.parse(localStorage.getItem("passaporte-players")||"null"); } catch(e){}
-const S = { phase:"setup", names: saved && saved.length ? saved : ["Ana","Bruno","Carla"], rounds:10, region:"all", history:[],
-  players:[], deck:[], r:0, shown:1, out:new Set(), buzz:null, result:null, msg:"" };
-
+function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function isRight(c,text){ const g=norm(text); return !!g && [c.n,...c.a].some(x=>norm(x)===g); }
+
+let savedNames = null; try { savedNames = JSON.parse(store("passaporte-players")||"null"); } catch(e){}
+const roomParam = (new URLSearchParams(location.search).get("sala")||"").toUpperCase().slice(0,4);
+const S = { phase:"setup", tab:"online", names: savedNames && savedNames.length ? savedNames : ["Ana","Bruno","Carla"], rounds:10, region:"all", secs:15, deadline:0, pauseLeft:0, history:[],
+  players:[], deck:[], r:0, shown:1, out:new Set(), buzz:null, result:null, msg:"",
+  myName: store("carimbo-nome")||"", joinCode: roomParam, onlineErr:"", busy:"" };
+
+const SECS = [10,15,20,30,0];
+function timebar(){ return `<div class="timebar" aria-hidden="true"><i id="timefill"></i></div>`; }
+const KINDS = ["Detalhe da estrada","Placas e sinalização","Escrita e idioma","Cena do Street View","Dica fácil"];
+function cluesHtml(country, shown, open){
+  return country.c.map((t,i)=> i < shown || open
+    ? `<div class="clue ${i===3?"photo":""}"><div class="n">${i+1}</div><div class="k">${i===3?"📷 ":""}${KINDS[i]}</div><p>${esc(t)}</p></div>`
+    : `<div class="clue hidden"><div class="n">${i+1}</div><div class="k">${KINDS[i]}</div><p>Vale ${5-i} ${i===4?"ponto":"pontos"}</p></div>`).join("");
+}
+function sheetHtml(items){
+  return `<h2 class="sheet-h">Colinha de metas</h2>
+    <p class="sheet-sub">Os países desta partida. Os que ninguém acertou estão marcados — comece a revisar por eles.</p>
+    <div class="sheet">${items.map(h=>`<div class="${h.hit?"":"miss"}"><strong>${esc(h.c.n)}</strong><span class="tag">${esc(h.tag)}</span><p>${esc(h.c.m)}</p></div>`).join("")}</div>`;
+}
+function rankHtml(players){
+  return `<div class="rank">${players.slice().sort((a,b)=>b.score-a.score).map((p,i)=>`<div><span class="pos">${i+1}º</span><strong>${esc(p.name)}</strong><span class="pts">${p.score}</span></div>`).join("")}</div>`;
+}
 
 function render(){
   if(S.phase==="setup") return renderSetup();
+  if(S.phase==="online") return renderOnline();
   if(S.phase==="end") return renderEnd();
   renderGame();
 }
 
+/* ---------- tela inicial ---------- */
 function renderSetup(){
-  $meta.textContent = `${C.length} países · até 8 jogadores`;
+  $meta.textContent = `${C.length} países · online ou na mesma tela`;
+  const online = S.tab==="online";
   $app.innerHTML = `<section class="setup">
     <div class="pitch">
       <h1>Onde<br>você <em>está?</em></h1>
-      <p>Treino de GeoGuessr em grupo: cada país vem com cinco pistas do tipo que você vê no Street View — linhas da pista, placas de carro, escrita, paisagem e mão de direção. Quem reconhecer primeiro aperta o próprio botão e responde.</p>
-      <p>Depois de cada rodada aparece a colinha de metas do país, e no fim vocês ganham a lista completa para revisar. Jogue no mesmo computador, na TV ou compartilhando a tela numa chamada.</p>
+      <p>Treino de GeoGuessr com os amigos: cada país vem com cinco pistas do tipo que você vê no Street View — linhas da pista, placas de carro, escrita, paisagem e mão de direção.</p>
+      <p>Depois de cada rodada aparece a colinha de metas do país, e no fim vocês ganham a lista completa para revisar.</p>
       <ul class="rules">
         <li><b>5 pts</b> acertar na 1ª dica — cada dica nova vale 1 ponto a menos</li>
-        <li><b>errou</b> fica fora da rodada; os outros continuam</li>
-        <li><b>1–8</b> teclas que apertam o botão de cada jogador · <b>espaço</b> revela a próxima dica</li>
+        <li><b>online</b> cada um no seu aparelho, um chute por rodada, dica nova a cada 15 segundos</li>
+        <li><b>1 tela</b> quem souber aperta o próprio nome (teclas 1–8); errou, fica fora da rodada</li>
       </ul>
     </div>
     <div class="card">
-      <h2>Tripulação</h2>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tabOnline" aria-selected="${online}">Online</button>
+        <button role="tab" id="tabLocal" aria-selected="${!online}">Mesma tela</button>
+      </div>
+      ${online ? `
+      <label class="lbl" for="myname">Seu nome</label>
+      <input class="field" id="myname" maxlength="18" autocomplete="nickname" placeholder="Como os amigos vão te ver" value="${esc(S.myName)}">
+      ${S.joinCode ? "" : `<button class="btn start" id="create" ${S.busy?"disabled":""}>Criar sala</button>
+      <div class="or">ou entre na sala de alguém</div>`}
+      <div class="joinrow">
+        <input class="field code-in" id="code" maxlength="4" autocomplete="off" placeholder="CÓDIGO" aria-label="Código da sala" value="${esc(S.joinCode)}">
+        <button class="btn" id="join" ${S.busy?"disabled":""}>Entrar na sala</button>
+      </div>
+      ${S.joinCode && roomParam ? `<button class="linkbtn" id="clearCode">Quero criar minha própria sala</button>` : ""}
+      <p class="status ${S.onlineErr?"bad":""}" role="status">${esc(S.onlineErr||S.busy)}</p>
+      ` : `
       <div class="plist">${S.names.map((n,i)=>`<div class="prow"><span class="num">${i+1}</span>
         <input id="p${i}" data-i="${i}" value="${esc(n)}" maxlength="18" aria-label="Nome do jogador ${i+1}">
         <button data-del="${i}" aria-label="Remover jogador" ${S.names.length<=1?"disabled":""}>×</button></div>`).join("")}</div>
@@ -236,20 +313,18 @@ function renderSetup(){
         <select id="region">${Object.entries(REGIONS).map(([k,v])=>`<option value="${k}" ${k===S.region?"selected":""}>${v}</option>`).join("")}</select>
         <label class="lbl" for="rounds">Rodadas</label>
         <select id="rounds">${[5,10,15,20].map(v=>`<option ${v===S.rounds?"selected":""}>${v}</option>`).join("")}</select>
+        <label class="lbl" for="secs">Timer</label>
+        <select id="secs">${SECS.map(v=>`<option value="${v}" ${v===S.secs?"selected":""}>${v?v+" s por dica":"Sem timer"}</option>`).join("")}</select>
       </div>
-      <button class="btn start" id="start">Embarcar</button>
+      <button class="btn start" id="start">Embarcar</button>`}
     </div>
   </section>`;
 }
 
+/* ---------- modo mesma tela ---------- */
 function renderGame(){
   const country = S.deck[S.r], worth = 6 - S.shown;
   $meta.textContent = `Rodada ${S.r+1} de ${S.deck.length}`;
-  const kinds = ["Detalhe da estrada","Placas e sinalização","Escrita e idioma","Cena do Street View","Dica fácil"];
-  const clues = country.c.map((t,i)=> i < S.shown || S.result
-    ? `<div class="clue ${i===3?"photo":""}"><div class="n">${i+1}</div><div class="k">${i===3?"📷 ":""}${kinds[i]}</div><p>${esc(t)}</p></div>`
-    : `<div class="clue hidden"><div class="n">${i+1}</div><div class="k">${kinds[i]}</div><p>Vale ${6-(i+1)} ${i===4?"ponto":"pontos"}</p></div>`).join("");
-
   let lower = "";
   if(S.result){
     const w = S.result.winner;
@@ -261,10 +336,10 @@ function renderGame(){
       <div class="memo"><span>Para lembrar no GeoGuessr</span>${esc(country.m)}</div>
     </div>`;
   } else if(S.buzz!=null){
-    lower = `<div class="answer" id="ansBox">
+    lower = `<div class="answer">
       <div class="who">${esc(S.players[S.buzz].name)} está respondendo · vale ${worth}</div>
       <form id="ansForm"><input id="ans" list="countries" autocomplete="off" placeholder="Digite o país…" aria-label="Resposta">
-      <button class="btn" type="submit">Responder</button><button class="btn ghost" type="button" id="cancel" style="color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--paper-2)">Cancelar</button></form>
+      <button class="btn" type="submit">Responder</button><button class="btn ghost ink" type="button" id="cancel">Cancelar</button></form>
     </div>`;
   } else {
     lower = `<div class="actions">
@@ -272,11 +347,11 @@ function renderGame(){
       <button class="btn ghost" id="giveup">Revelar país</button>
     </div><div class="toast bad" role="status">${esc(S.msg)}</div>`;
   }
-
   $app.innerHTML = `<section class="game">
     <div>
-      <p class="worth">${S.result?"Resposta":`Valendo ${worth} ${worth===1?"ponto":"pontos"}`}</p>
-      <div class="clues">${clues}</div>
+      <p class="worth">${S.result?"Resposta":`Valendo ${worth} ${worth===1?"ponto":"pontos"}`} <span class="timer" id="timer"></span></p>
+      ${!S.result && S.secs ? timebar() : ""}
+      <div class="clues">${cluesHtml(country, S.shown, !!S.result)}</div>
       ${lower}
     </div>
     <aside class="board">
@@ -288,22 +363,21 @@ function renderGame(){
     </aside>
   </section>`;
   if(S.buzz!=null) document.getElementById("ans")?.focus();
+  tickLocal();
 }
 
 function renderEnd(){
   $meta.textContent = "Fim da viagem";
-  const rank = S.players.map(p=>p).sort((a,b)=>b.score-a.score);
+  const top = S.players.slice().sort((a,b)=>b.score-a.score)[0];
   $app.innerHTML = `<section class="final">
     <div class="meta">Quem rodou mais o mundo</div>
-    <h1>${esc(rank[0].name)} venceu</h1>
-    <div class="rank">${rank.map((p,i)=>`<div><span class="pos">${i+1}º</span><strong>${esc(p.name)}</strong><span class="pts">${p.score}</span></div>`).join("")}</div>
+    <h1>${esc(top.name)} venceu</h1>
+    ${rankHtml(S.players)}
     <div class="row" style="justify-content:center">
       <button class="btn" id="again">Jogar de novo</button>
-      <button class="btn ghost" id="toSetup">Trocar jogadores</button>
+      <button class="btn ghost" id="toSetup">Voltar ao início</button>
     </div>
-    <h2 class="sheet-h">Colinha de metas</h2>
-    <p class="sheet-sub">Os países desta partida. Os que ninguém acertou estão marcados — comece a revisar por eles.</p>
-    <div class="sheet">${S.history.map(h=>`<div class="${h.hit?"":"miss"}"><strong>${esc(h.c.n)}</strong><span class="tag">${h.hit?`${h.at}ª dica`:"ninguém"}</span><p>${esc(h.c.m)}</p></div>`).join("")}</div>
+    ${sheetHtml(S.history.map(h=>({c:h.c,hit:h.hit,tag:h.hit?`${h.at}ª dica`:"ninguém"})))}
   </section>`;
 }
 
@@ -312,55 +386,390 @@ function startGame(){
   readNames();
   const names = S.names.map(n=>n.trim()).filter(Boolean);
   if(!names.length) return;
-  S.names = names; try{ localStorage.setItem("passaporte-players", JSON.stringify(names)); }catch(e){}
+  S.names = names; store("passaporte-players", JSON.stringify(names));
   S.players = names.map(name=>({name,score:0}));
-  S.history=[]; S.deck = shuffle(C.filter(c=>S.region==="all"||c.r===S.region)).slice(0, Math.min(S.rounds, C.length));
+  S.history=[]; S.deck = shuffle(C.filter(c=>S.region==="all"||c.r===S.region)).slice(0, S.rounds);
   S.r=0; newRound(); S.phase="game"; render();
 }
-function newRound(){ S.shown=1; S.out=new Set(); S.buzz=null; S.result=null; S.msg=""; }
+function newRound(){ S.deadline=Date.now()+S.secs*1000; S.shown=1; S.out=new Set(); S.buzz=null; S.result=null; S.msg=""; }
 function reveal(winner){ S.history.push({c:S.deck[S.r],hit:winner!=null,at:S.shown}); S.result = {winner, pts: winner!=null?6-S.shown:0, at:S.shown}; S.buzz=null; S.shown=5; }
-function nextClue(){ if(S.shown<5){ S.shown++; S.msg=""; render(); } }
-
+function nextClue(){ if(S.shown<5){ S.shown++; S.msg=""; S.deadline=Date.now()+S.secs*1000; render(); } }
+function buzzIn(i){ S.pauseLeft=Math.max(1000,S.deadline-Date.now()); S.buzz=i; S.msg=""; render(); }
+function resumeTimer(){ S.deadline=Date.now()+S.pauseLeft; }
+function tickLocal(){
+  if(S.phase!=="game" || S.result || !S.secs) return;
+  const total=S.secs*1000, left = S.buzz!=null ? S.pauseLeft : Math.max(0, S.deadline-Date.now());
+  const el=document.getElementById("timer"), bar=document.getElementById("timefill");
+  if(el) el.textContent = S.buzz!=null ? "· timer pausado" : `· ${S.shown<5?"nova dica":"revela"} em ${Math.ceil(left/1000)}s`;
+  if(bar){ bar.style.width = (100*left/total)+"%"; bar.classList.toggle("low", left<4000); }
+  if(S.buzz==null && left<=0){ if(S.shown<5) nextClue(); else { reveal(null); render(); } }
+}
+setInterval(tickLocal, 200);
 function submit(){
-  const input = document.getElementById("ans"); const guess = norm(input.value);
-  if(!guess) return;
-  const c = S.deck[S.r], who = S.buzz;
-  if([c.n,...c.a].some(x=>norm(x)===guess)){
-    S.players[who].score += 6 - S.shown; reveal(who); render();
-  } else {
-    S.out.add(who); S.buzz=null;
+  const input = document.getElementById("ans"); if(!norm(input.value)) return;
+  const who = S.buzz;
+  if(isRight(S.deck[S.r], input.value)){ S.players[who].score += 6 - S.shown; reveal(who); render(); }
+  else {
+    S.out.add(who); S.buzz=null; resumeTimer();
     S.msg = `${S.players[who].name} chutou “${input.value.trim()}” e está fora desta rodada.`;
-    if(S.out.size===S.players.length){ reveal(null); }
+    if(S.out.size===S.players.length) reveal(null);
     render();
     if(!S.result) document.querySelector(".clues")?.classList.add("shake");
   }
 }
 
+/* ---------- modo online (PeerJS: o anfitrião guarda o estado e repassa pra todos) ---------- */
+const PREFIX = "carimbo-passaporte-v1-", REVEAL_MS = 12000;
+const clueMs = ()=> (O.st && O.st.secs || 15) * 1000;
+// id por aba (sessionStorage): recarregar a página volta como o mesmo jogador, outra aba vira outro jogador
+let myId = null; try{ myId = sessionStorage.getItem("carimbo-id"); }catch(e){}
+if(!myId){ myId = Math.random().toString(36).slice(2,12); try{ sessionStorage.setItem("carimbo-id", myId); }catch(e){} }
+const O = { role:null, code:null, peer:null, conns:new Map(), host:null, st:null, deadline:0, lost:false, myGuess:"" };
+
+function genCode(){ const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; return Array.from({length:4},()=>A[Math.floor(Math.random()*A.length)]).join(""); }
+function peerErrMsg(err){
+  const t = err && err.type;
+  if(t==="peer-unavailable") return "Sala não encontrada. Confira o código — quem criou a sala precisa estar com o jogo aberto.";
+  if(t==="network"||t==="server-error"||t==="socket-error"||t==="socket-closed") return "Sem conexão com o servidor do modo online. Tente de novo em alguns segundos.";
+  if(t==="browser-incompatible") return "Este navegador não suporta o modo online. Tente o Chrome.";
+  return `Erro de conexão (${t||"desconhecido"}). Tente de novo.`;
+}
+function readyOnline(){
+  const name = S.myName.trim();
+  if(!name){ S.onlineErr = "Digite seu nome primeiro."; render(); document.getElementById("myname")?.focus(); return ""; }
+  if(typeof Peer === "undefined"){ S.onlineErr = "Não consegui carregar o modo online. Verifique a internet e recarregue a página."; render(); return ""; }
+  store("carimbo-nome", name); return name;
+}
+function setRoomUrl(code){ try{ history.replaceState(null, "", code ? `?sala=${code}` : location.pathname); }catch(e){} }
+function roomLink(){ return `${location.origin}${location.pathname}?sala=${O.code}`; }
+
+function createRoom(){
+  const name = readyOnline(); if(!name) return;
+  const code = genCode();
+  S.onlineErr = ""; S.busy = "Criando sala…"; render();
+  const peer = new Peer(PREFIX + code);
+  peer.on("open", ()=>{
+    Object.assign(O, { role:"host", code, peer, conns:new Map(), lost:false, myGuess:"" });
+    O.st = { phase:"lobby", region:"all", rounds:10, secs:15, players:[{id:myId,name,score:0,online:true}], deck:[], r:0, shown:1, guesses:{}, revealed:false, history:[] };
+    S.busy = ""; S.phase = "online"; setRoomUrl(code); render();
+  });
+  peer.on("connection", conn=>{
+    conn.on("data", msg=>hostHandle(conn, msg));
+    conn.on("close", ()=>{
+      if(!conn.pid || O.conns.get(conn.pid)!==conn) return;
+      O.conns.delete(conn.pid);
+      const p = O.st.players.find(p=>p.id===conn.pid); if(p) p.online = false;
+      if(!checkAllGuessed()) broadcast();
+    });
+  });
+  peer.on("error", err=>{
+    if(err.type==="unavailable-id" && O.role!=="host"){ peer.destroy(); S.busy=""; createRoom(); return; }
+    if(O.role==="host") return; // erros de conexões individuais não derrubam a sala
+    S.busy = ""; S.onlineErr = peerErrMsg(err); render();
+  });
+  peer.on("disconnected", ()=>{ try{ peer.reconnect(); }catch(e){} });
+}
+
+function hostHandle(conn, msg){
+  if(!msg || typeof msg!=="object") return;
+  if(msg.t==="join"){
+    const pid = String(msg.id||"").slice(0,20), name = String(msg.name||"").trim().slice(0,18) || "Jogador";
+    if(!pid || pid===myId) return;
+    let p = O.st.players.find(p=>p.id===pid);
+    if(!p){
+      if(O.st.players.length>=12){ conn.send({t:"full"}); return; }
+      p = {id:pid, name, score:0, online:true}; O.st.players.push(p);
+    } else { p.online = true; p.name = name; }
+    const old = O.conns.get(pid);
+    conn.pid = pid; O.conns.set(pid, conn);
+    if(old && old!==conn) try{ old.close(); }catch(e){}
+    broadcast();
+  } else if(msg.t==="guess" && conn.pid){
+    guess(conn.pid, String(msg.text||"").slice(0,60));
+  }
+}
+
+function publicState(){
+  const st = O.st, guesses = {};
+  for(const [pid,g] of Object.entries(st.guesses)) guesses[pid] = st.revealed ? g : {ok:g.ok, at:g.at, pts:g.pts};
+  return {...st, guesses, left: Math.max(0, O.deadline - Date.now())};
+}
+function broadcast(){
+  const s = publicState();
+  for(const c of O.conns.values()){ try{ c.send({t:"state", st:s}); }catch(e){} }
+  render();
+}
+function hostStart(){
+  const st = O.st;
+  const pool = C.map((c,i)=>i).filter(i=>st.region==="all"||C[i].r===st.region);
+  st.deck = shuffle(pool).slice(0, st.rounds);
+  st.players = st.players.filter(p=>p.online); st.players.forEach(p=>p.score=0);
+  st.history = []; st.r = 0; st.phase = "game"; newOnlineRound();
+}
+function newOnlineRound(){ const st=O.st; st.shown=1; st.guesses={}; st.revealed=false; O.myGuess=""; O.deadline=Date.now()+clueMs(); broadcast(); }
+function hostNextClue(){ const st=O.st; if(st.revealed) return; if(st.shown<5){ st.shown++; O.deadline=Date.now()+clueMs(); broadcast(); } else revealRound(); }
+function revealRound(){
+  const st = O.st; if(st.revealed) return;
+  st.revealed = true;
+  st.history.push({ci:st.deck[st.r], hits:st.players.filter(p=>st.guesses[p.id]?.ok).map(p=>({name:p.name, at:st.guesses[p.id].at}))});
+  O.deadline = Date.now() + REVEAL_MS; broadcast();
+}
+function hostNextRound(){ const st=O.st; if(st.r+1<st.deck.length){ st.r++; newOnlineRound(); } else { st.phase="end"; broadcast(); } }
+function guess(pid, text){
+  const st = O.st;
+  if(st.phase!=="game" || st.revealed || st.guesses[pid] || !norm(text)) return;
+  const ok = isRight(C[st.deck[st.r]], text), pts = ok ? 6 - st.shown : 0;
+  st.guesses[pid] = {ok, at:st.shown, pts, text:text.trim()};
+  const p = st.players.find(p=>p.id===pid); if(p) p.score += pts;
+  if(!checkAllGuessed()) broadcast();
+}
+function checkAllGuessed(){
+  const st = O.st; if(st.phase!=="game" || st.revealed) return false;
+  const on = st.players.filter(p=>p.online);
+  if(on.length && on.every(p=>st.guesses[p.id])){ revealRound(); return true; }
+  return false;
+}
+
+function joinRoom(){
+  const name = readyOnline(); if(!name) return;
+  const code = S.joinCode.toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(code.length!==4){ S.onlineErr = "O código da sala tem 4 letras ou números."; render(); return; }
+  S.onlineErr = ""; S.busy = "Conectando à sala…"; render();
+  const peer = new Peer();
+  let done = false;
+  const fail = msg=>{ if(done) return; done = true; S.busy=""; S.onlineErr = msg; try{ peer.destroy(); }catch(e){} render(); };
+  const timer = setTimeout(()=>fail("Não consegui conectar. Confira o código ou peça pra criarem outra sala."), 20000);
+  peer.on("open", ()=>{
+    const conn = peer.connect(PREFIX + code, {reliable:true});
+    conn.on("open", ()=>{
+      Object.assign(O, { role:"guest", code, peer, host:conn, lost:false, myGuess:"" });
+      conn.send({t:"join", id:myId, name});
+    });
+    conn.on("data", msg=>{
+      if(!msg || typeof msg!=="object") return;
+      if(msg.t==="state"){
+        if(!done){ done = true; clearTimeout(timer); }
+        if(O.st && (msg.st.r!==O.st.r || msg.st.phase!==O.st.phase)) O.myGuess = "";
+        O.st = msg.st; O.deadline = Date.now() + (msg.st.left||0);
+        S.busy = ""; S.phase = "online"; setRoomUrl(code); render();
+      } else if(msg.t==="full"){ clearTimeout(timer); fail("A sala está cheia (máximo de 12 pessoas)."); }
+    });
+    conn.on("close", ()=>{ if(S.phase==="online"){ O.lost = true; render(); } });
+  });
+  peer.on("error", err=>{
+    if(S.phase==="online"){ if(err.type!=="peer-unavailable"){ O.lost = true; render(); } return; }
+    clearTimeout(timer); fail(peerErrMsg(err));
+  });
+}
+
+function leaveRoom(){
+  try{ O.peer && O.peer.destroy(); }catch(e){}
+  Object.assign(O, { role:null, code:null, peer:null, conns:new Map(), host:null, st:null, lost:false, myGuess:"" });
+  S.joinCode = ""; S.phase = "setup"; S.tab = "online"; setRoomUrl(""); render();
+}
+
+function sendGuess(){
+  const input = document.getElementById("guess"); if(!input || !norm(input.value)) return;
+  O.myGuess = input.value.trim();
+  if(O.role==="host") guess(myId, O.myGuess);
+  else { try{ O.host.send({t:"guess", text:O.myGuess}); }catch(e){} render(); }
+}
+
+function playerRows(st){
+  const me = myId;
+  return st.players.map(p=>{
+    const g = st.guesses && st.guesses[p.id];
+    let status = "";
+    if(st.phase==="game"){
+      if(!g) status = st.revealed ? "sem chute" : "pensando…";
+      else if(g.ok) status = `✓ ${g.at}ª dica`;
+      else status = st.revealed && g.text ? `✗ ${g.text}` : "✗ errou";
+    } else if(!p.online) status = "saiu";
+    return `<div class="buzz player ${p.online?"":"out"} ${p.id===me?"me":""} ${g?(g.ok?"hit":"miss"):""}">
+      <span class="key">${p.id===st.players[0].id?"★":"·"}</span>
+      <span class="nm">${esc(p.name)}${p.id===me?" <small>(você)</small>":""}<small class="st">${esc(status)}</small></span>
+      <span class="sc">${p.score}</span></div>`;
+  }).join("");
+}
+
+function renderOnline(){
+  const st = O.st, host = O.role==="host";
+  const prev = document.getElementById("guess");
+  const keep = prev ? {v:prev.value, f:document.activeElement===prev} : null;
+
+  if(O.lost){
+    $meta.textContent = "Conexão perdida";
+    $app.innerHTML = `<section class="final"><h1>Conexão perdida</h1>
+      <p class="sheet-sub">Quem criou a sala fechou o jogo ou a internet caiu.</p>
+      <div class="row" style="justify-content:center"><button class="btn" id="rejoin">Tentar entrar de novo</button><button class="btn ghost" id="leave">Voltar ao início</button></div></section>`;
+    return;
+  }
+
+  if(st.phase==="lobby"){
+    $meta.textContent = `Sala ${O.code}`;
+    $app.innerHTML = `<section class="game online">
+      <div>
+        <div class="meta">Código da sala</div>
+        <div class="bigcode">${esc(O.code)}</div>
+        <p class="lead">Mande o código ou o link pros amigos. Eles entram pelo próprio celular ou computador.</p>
+        <div class="linkrow"><input id="roomlink" readonly value="${esc(roomLink())}" aria-label="Link da sala"><button class="btn ghost" id="copy">Copiar link</button></div>
+        ${host ? `<div class="hostbox">
+          <div class="row">
+            <label class="lbl" for="oregion">Região</label>
+            <select id="oregion">${Object.entries(REGIONS).map(([k,v])=>`<option value="${k}" ${k===st.region?"selected":""}>${v}</option>`).join("")}</select>
+            <label class="lbl" for="orounds">Rodadas</label>
+            <select id="orounds">${[5,10,15,20].map(v=>`<option ${v===st.rounds?"selected":""}>${v}</option>`).join("")}</select>
+            <label class="lbl" for="osecs">Timer</label>
+            <select id="osecs">${SECS.filter(Boolean).map(v=>`<option value="${v}" ${v===st.secs?"selected":""}>${v} s por dica</option>`).join("")}</select>
+          </div>
+          <button class="btn start" id="ostart">Começar partida (${st.players.filter(p=>p.online).length} ${st.players.filter(p=>p.online).length===1?"jogador":"jogadores"})</button>
+          <p class="note">Deixe esta aba aberta durante a partida — se você fechar, a sala acaba pra todo mundo.</p>
+        </div>` : `<p class="waiting">Aguardando ${esc(st.players[0].name)} começar a partida… · ${esc(REGIONS[st.region])}, ${st.rounds} rodadas, ${st.secs} s por dica</p>`}
+        <div class="actions"><button class="btn ghost" id="leave">Sair da sala</button></div>
+      </div>
+      <aside class="board"><h3>Na sala</h3><p class="hint">★ criou a sala</p><div class="pl">${playerRows(st)}</div></aside>
+    </section>`;
+    return;
+  }
+
+  if(st.phase==="end"){
+    $meta.textContent = `Sala ${O.code} · fim`;
+    const top = st.players.slice().sort((a,b)=>b.score-a.score)[0];
+    $app.innerHTML = `<section class="final">
+      <div class="meta">Quem rodou mais o mundo</div>
+      <h1>${esc(top ? top.name : "Ninguém")} venceu</h1>
+      ${rankHtml(st.players)}
+      <div class="row" style="justify-content:center">
+        ${host ? `<button class="btn" id="olobby">Nova partida nesta sala</button>` : `<p class="waiting">Aguardando uma nova partida…</p>`}
+        <button class="btn ghost" id="leave">Sair da sala</button>
+      </div>
+      ${sheetHtml(st.history.map(h=>({c:C[h.ci], hit:h.hits.length>0, tag:h.hits.length?`${h.hits.length} ${h.hits.length===1?"acerto":"acertos"}`:"ninguém"})))}
+    </section>`;
+    return;
+  }
+
+  const country = C[st.deck[st.r]], worth = 6 - st.shown, mine = st.guesses[myId];
+  $meta.textContent = `Sala ${O.code} · rodada ${st.r+1} de ${st.deck.length}`;
+  let lower;
+  if(st.revealed){
+    const h = st.history[st.history.length-1];
+    lower = `<div class="reveal">
+      <div class="stampmark ${mine&&mine.ok?"ok":""}">${mine ? (mine.ok?`+${mine.pts}<br>pts`:"Errou") : "Sem<br>chute"}</div>
+      <div class="grow"><p class="country">${esc(country.n)}</p>
+      <p class="res">${h && h.hits.length ? "Acertaram: " + h.hits.map(x=>`${esc(x.name)} (${x.at}ª)`).join(", ") : "Ninguém acertou este."}</p></div>
+      ${host ? `<button class="btn" id="onextround">${st.r+1<st.deck.length?"Próximo país →":"Ver resultado"}</button>` : ""}
+      <div class="memo"><span>Para lembrar no GeoGuessr</span>${esc(country.m)}</div>
+    </div>`;
+  } else if(mine || O.myGuess){
+    const known = !!mine;
+    lower = `<div class="answer">
+      <div class="who">Seu chute${O.myGuess?`: “${esc(O.myGuess)}”`:""}</div>
+      <p class="mine ${known?(mine.ok?"good":"bad"):""}">${!known ? "Enviando…" : mine.ok ? `Acertou! +${mine.pts} ${mine.pts===1?"ponto":"pontos"}` : "Não é esse. Agora é torcer pros outros errarem também."}</p>
+      <p class="res">O país aparece quando todos chutarem ou as dicas acabarem.</p>
+    </div>`;
+  } else {
+    lower = `<div class="answer">
+      <div class="who">Um chute por rodada · vale ${worth} ${worth===1?"ponto":"pontos"} agora</div>
+      <form id="guessForm"><input id="guess" list="countries" autocomplete="off" placeholder="Digite o país…" aria-label="Seu chute">
+      <button class="btn" type="submit">Chutar</button></form>
+    </div>`;
+  }
+  $app.innerHTML = `<section class="game online">
+    <div>
+      <p class="worth">${st.revealed ? "Resposta" : `Dica ${st.shown} de 5 · valendo ${worth}`} <span class="timer" id="timer"></span></p>
+      ${timebar()}
+      <div class="clues">${cluesHtml(country, st.shown, st.revealed)}</div>
+      ${lower}
+      ${host && !st.revealed ? `<div class="actions"><button class="btn ghost" id="onext">${st.shown<5?"Próxima dica agora":"Revelar país"}</button></div>` : ""}
+    </div>
+    <aside class="board">
+      <h3>Placar</h3>
+      <p class="hint">★ criou a sala · ✓ acertou · ✗ errou</p>
+      <div class="pl">${playerRows(st)}</div>
+      <div class="actions">${host ? `<button class="btn ghost" id="oquit" style="flex:1">Encerrar partida</button>` : `<button class="btn ghost" id="leave" style="flex:1">Sair da sala</button>`}</div>
+    </aside>
+  </section>`;
+  tickTimer();
+  const g = document.getElementById("guess");
+  if(g && keep){ g.value = keep.v; if(keep.f){ g.focus(); g.setSelectionRange(g.value.length, g.value.length); } }
+}
+
+function tickTimer(){
+  if(S.phase!=="online" || !O.st || O.st.phase!=="game" || O.lost) return;
+  const left = Math.max(0, O.deadline - Date.now()), secs = Math.ceil(left/1000);
+  const el = document.getElementById("timer"), bar = document.getElementById("timefill");
+  if(bar){ bar.style.width = (100*left/(O.st.revealed?REVEAL_MS:clueMs()))+"%"; bar.classList.toggle("low", left<4000); }
+  if(el) el.textContent = O.st.revealed ? `· próximo país em ${secs}s` : (O.st.shown<5 ? `· nova dica em ${secs}s` : `· revela em ${secs}s`);
+  if(O.role==="host" && left<=0){ if(O.st.revealed) hostNextRound(); else hostNextClue(); }
+}
+setInterval(tickTimer, 250);
+
+/* ---------- eventos ---------- */
 $app.addEventListener("click", e=>{
   const t = e.target.closest("button"); if(!t) return;
-  if(t.id==="add"){ readNames(); S.names.push(""); render(); document.getElementById("p"+(S.names.length-1))?.focus(); }
+  const id = t.id;
+  if(id==="tabOnline"){ S.tab="online"; render(); }
+  else if(id==="tabLocal"){ S.tab="local"; render(); }
+  else if(id==="create") createRoom();
+  else if(id==="join") joinRoom();
+  else if(id==="clearCode"){ S.joinCode=""; setRoomUrl(""); render(); }
+  else if(id==="add"){ readNames(); S.names.push(""); render(); document.getElementById("p"+(S.names.length-1))?.focus(); }
   else if(t.dataset.del!=null){ readNames(); S.names.splice(+t.dataset.del,1); render(); }
-  else if(t.id==="start") startGame();
-  else if(t.id==="more") nextClue();
-  else if(t.id==="giveup"){ reveal(null); render(); }
-  else if(t.dataset.buzz!=null){ S.buzz=+t.dataset.buzz; S.msg=""; render(); }
-  else if(t.id==="cancel"){ S.buzz=null; render(); }
-  else if(t.id==="nextRound"){ if(S.r+1<S.deck.length){ S.r++; newRound(); render(); } else { S.phase="end"; render(); } }
-  else if(t.id==="quit"){ S.phase="end"; render(); }
-  else if(t.id==="again") startGame();
-  else if(t.id==="toSetup"){ S.phase="setup"; render(); }
+  else if(id==="start") startGame();
+  else if(id==="more") nextClue();
+  else if(id==="giveup"){ reveal(null); render(); }
+  else if(t.dataset.buzz!=null) buzzIn(+t.dataset.buzz);
+  else if(id==="cancel"){ S.buzz=null; resumeTimer(); render(); }
+  else if(id==="nextRound"){ if(S.r+1<S.deck.length){ S.r++; newRound(); render(); } else { S.phase="end"; render(); } }
+  else if(id==="quit"){ S.phase="end"; render(); }
+  else if(id==="again") startGame();
+  else if(id==="toSetup"){ S.phase="setup"; S.tab="local"; render(); }
+  else if(id==="copy"){
+    const inp = document.getElementById("roomlink");
+    const done = ()=>{ t.textContent = "Copiado!"; setTimeout(()=>{ if(t.isConnected) t.textContent = "Copiar link"; }, 1500); };
+    if(navigator.clipboard) navigator.clipboard.writeText(inp.value).then(done, ()=>{ inp.select(); document.execCommand("copy"); done(); });
+    else { inp.select(); document.execCommand("copy"); done(); }
+  }
+  else if(id==="ostart" && O.role==="host") hostStart();
+  else if(id==="onext" && O.role==="host") hostNextClue();
+  else if(id==="onextround" && O.role==="host") hostNextRound();
+  else if(id==="oquit" && O.role==="host"){ O.st.phase="end"; broadcast(); }
+  else if(id==="olobby" && O.role==="host"){ O.st.phase="lobby"; O.st.players=O.st.players.filter(p=>p.online); broadcast(); }
+  else if(id==="leave") leaveRoom();
+  else if(id==="rejoin"){ const code=O.code; leaveRoom(); S.joinCode=code; joinRoom(); }
 });
-$app.addEventListener("change", e=>{ if(e.target.id==="rounds") S.rounds=+e.target.value; if(e.target.id==="region") S.region=e.target.value; });
-$app.addEventListener("submit", e=>{ e.preventDefault(); submit(); });
+$app.addEventListener("input", e=>{
+  if(e.target.id==="myname") S.myName = e.target.value;
+  if(e.target.id==="code"){ e.target.value = e.target.value.toUpperCase(); S.joinCode = e.target.value; }
+});
+$app.addEventListener("change", e=>{
+  const id = e.target.id;
+  if(id==="rounds") S.rounds=+e.target.value;
+  if(id==="region") S.region=e.target.value;
+  if(id==="secs") S.secs=+e.target.value;
+  if(O.role==="host" && (id==="oregion"||id==="orounds"||id==="osecs")){
+    if(id==="oregion") O.st.region = e.target.value; else if(id==="orounds") O.st.rounds = +e.target.value; else O.st.secs = +e.target.value;
+    broadcast();
+  }
+});
+$app.addEventListener("submit", e=>{
+  e.preventDefault();
+  if(e.target.id==="guessForm") sendGuess(); else submit();
+});
+$app.addEventListener("keydown", e=>{
+  if(e.key==="Enter" && (e.target.id==="code" || (e.target.id==="myname" && S.joinCode))){ e.preventDefault(); joinRoom(); }
+  else if(e.key==="Enter" && e.target.id==="myname"){ e.preventDefault(); createRoom(); }
+});
 document.addEventListener("keydown", e=>{
   if(S.phase!=="game") return;
-  if(e.target.matches("input,select,textarea")){ if(e.key==="Escape"){ S.buzz=null; render(); } return; }
+  if(e.target.matches("input,select,textarea")){ if(e.key==="Escape" && S.buzz!=null){ S.buzz=null; resumeTimer(); render(); } return; }
   if(S.result){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); document.getElementById("nextRound")?.click(); } return; }
   if(S.buzz!=null) return;
   const k = parseInt(e.key,10);
-  if(k>=1 && k<=S.players.length && !S.out.has(k-1)){ e.preventDefault(); S.buzz=k-1; S.msg=""; render(); }
+  if(k>=1 && k<=S.players.length && !S.out.has(k-1)){ e.preventDefault(); buzzIn(k-1); }
   else if(e.key===" "||e.key==="ArrowRight"){ e.preventDefault(); nextClue(); }
 });
+window.addEventListener("beforeunload", e=>{ if(O.role==="host" && O.st && O.st.phase!=="lobby"){ e.preventDefault(); e.returnValue=""; } });
 
 render();
 </script>
